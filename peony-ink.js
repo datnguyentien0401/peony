@@ -17,7 +17,6 @@ let pointerY = 0;
 let targetPointerX = 0;
 let targetPointerY = 0;
 let animationStarted = false;
-let textDots = [];
 const dotSprites = new Map();
 
 function resize() {
@@ -158,7 +157,6 @@ function buildDots(image) {
     });
   }
 
-  buildTextDots();
   startAnimation();
 }
 
@@ -175,74 +173,6 @@ function pickWeighted(candidates, totalWeight) {
 
   return candidates[low];
 }
-
-function buildTextDots() {
-  const textCanvas = document.createElement("canvas");
-  const textCtx = textCanvas.getContext("2d", { willReadFrequently: true });
-  const fontSize = 72;
-  const message = "Happy Birthday Lan Phuong";
-
-  textCanvas.width = 1180;
-  textCanvas.height = 150;
-  textCtx.clearRect(0, 0, textCanvas.width, textCanvas.height);
-  textCtx.fillStyle = "#fff";
-  textCtx.textAlign = "center";
-  textCtx.textBaseline = "middle";
-  textCtx.font = `300 italic ${fontSize}px "Snell Roundhand", "Great Vibes", "Palatino Linotype", "Brush Script MT", cursive`;
-  textCtx.fillText(message, textCanvas.width / 2, textCanvas.height / 2 + 6);
-
-  const pixels = textCtx.getImageData(0, 0, textCanvas.width, textCanvas.height).data;
-  const candidates = [];
-
-  for (let y = 0; y < textCanvas.height; y += 3) {
-    for (let x = 0; x < textCanvas.width; x += 3) {
-      const alpha = pixels[(y * textCanvas.width + x) * 4 + 3];
-      if (alpha > 70) candidates.push({ x, y, alpha: alpha / 255 });
-    }
-  }
-
-  textDots = candidates.map((dot) => ({
-    x: (dot.x - textCanvas.width / 2) / textCanvas.width,
-    y: (dot.y - textCanvas.height / 2) / textCanvas.height,
-    alpha: dot.alpha,
-    phase: Math.random() * Math.PI * 2,
-    size: 0.58 + Math.random() * 0.52,
-  }));
-}
-
-function drawTextDots(seconds) {
-  if (!textDots.length) return;
-
-  const reveal = smoothstep(seconds / 4.2);
-
-  const textWidth = Math.min(width * 0.66, 620);
-  const textHeight = textWidth * 0.13;
-  const centerX = width / 2;
-  const centerY = height - Math.max(42, height * 0.075);
-  const sprite = getDotSprite(4);
-
-  ctx.save();
-  ctx.globalCompositeOperation = "lighter";
-
-  for (const dot of textDots) {
-    const revealEdge = (dot.x + 0.5) / 1;
-    const revealAlpha = smoothstep((reveal - revealEdge) / 0.08 + 0.5);
-    if (revealAlpha <= 0) continue;
-
-    const shimmer = 0.8 + Math.sin(seconds * 1.9 + dot.phase) * 0.18;
-    const size = dot.size * Math.max(1.05, textWidth * 0.0042) * (0.82 + revealAlpha * 0.18);
-    const slide = (1 - revealAlpha) * 26;
-    const x = centerX + dot.x * textWidth - slide;
-    const y = centerY + dot.y * textHeight;
-
-    ctx.globalAlpha = Math.min(1, dot.alpha * shimmer * 0.92 * revealAlpha);
-    ctx.drawImage(sprite, x - size, y - size, size * 2, size * 2);
-  }
-
-  ctx.globalAlpha = 1;
-  ctx.restore();
-}
-
 function rotate(point, angleX, angleY) {
   let { x, y, z } = point;
 
@@ -374,7 +304,6 @@ function draw(time = 0) {
 
   ctx.globalAlpha = 1;
   ctx.restore();
-  drawTextDots(seconds);
   requestAnimationFrame(draw);
 }
 
